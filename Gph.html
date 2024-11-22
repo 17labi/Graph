@@ -1,0 +1,187 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Interactive Graph Background</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            font-family: Arial, sans-serif;
+            overflow: hidden;
+            background: linear-gradient(135deg, #232526, #414345); /* Cool dark gradient background */
+        }
+
+        #coordinates {
+            position: absolute;
+            top: 10px;
+            left: 10px;
+            color: #00ffcc; /* Light cyan color for coordinates */
+            font-size: 18px;
+            z-index: 10;
+            font-family: 'Courier New', Courier, monospace;
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        #graph-background {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: repeating-linear-gradient(0deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3) 1px, transparent 1px, transparent 10px),
+                        repeating-linear-gradient(90deg, rgba(255, 255, 255, 0.3), rgba(255, 255, 255, 0.3) 1px, transparent 1px, transparent 10px);
+            z-index: 0;
+        }
+
+        #center-marker {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 15px;
+            height: 15px;
+            background-color: #ff007f; /* Bright pink for the center marker */
+            border-radius: 50%;
+            transform: translate(-50%, -50%);
+            z-index: 5;
+            box-shadow: 0 0 20px rgba(255, 0, 127, 0.6); /* Glow effect for center marker */
+            animation: pulse 1.5s infinite ease-in-out; /* Pulsing effect */
+        }
+
+        @keyframes pulse {
+            0% {
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 0 0 20px rgba(255, 0, 127, 0.6);
+            }
+            50% {
+                transform: translate(-50%, -50%) scale(1.2);
+                box-shadow: 0 0 40px rgba(255, 0, 127, 0.9);
+            }
+            100% {
+                transform: translate(-50%, -50%) scale(1);
+                box-shadow: 0 0 20px rgba(255, 0, 127, 0.6);
+            }
+        }
+
+        /* Drop (dot) animation */
+        .dot {
+            position: absolute;
+            width: 10px;
+            height: 10px;
+            background-color: yellow;
+            border-radius: 50%; /* Circle shape */
+            pointer-events: none;
+            z-index: 1;
+            animation: fadeOut 2s forwards; /* Dot fade-out animation */
+        }
+
+        @keyframes fadeOut {
+            0% {
+                opacity: 1;
+                transform: scale(1);
+            }
+            100% {
+                opacity: 0;
+                transform: scale(0);
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- Displaying the X, Y coordinates -->
+    <div id="coordinates">
+        <span>X: <span id="x-coord">0.00</span></span> 
+        <span>Y: <span id="y-coord">0.00</span></span>
+    </div>
+
+    <!-- Graph background -->
+    <div id="graph-background"></div>
+
+    <!-- Center marker -->
+    <div id="center-marker"></div>
+
+    <script>
+        // Grab the necessary elements
+        const xCoordElement = document.getElementById('x-coord');
+        const yCoordElement = document.getElementById('y-coord');
+        let lastX = null;
+        let lastY = null;
+        
+        // Center of the screen
+        const centerX = window.innerWidth / 2;
+        const centerY = window.innerHeight / 2;
+
+        // Throttle function to reduce event handling frequency
+        function throttle(func, delay) {
+            let lastTime = 0;
+            return function (...args) {
+                const now = new Date().getTime();
+                if (now - lastTime >= delay) {
+                    lastTime = now;
+                    func(...args);
+                }
+            };
+        }
+
+        // Function to create a drop (dot) at the touch position
+        function createDrop(x, y) {
+            const dot = document.createElement('div');
+            dot.classList.add('dot');
+            dot.style.left = `${x - 5}px`; // Center the dot
+            dot.style.top = `${y - 5}px`;  // Center the dot
+            document.body.appendChild(dot);
+
+            // Remove the dot after the animation is finished
+            setTimeout(() => {
+                dot.remove();
+            }, 2000); // Match the duration of the fade-out animation
+        }
+
+        // Calculate and update coordinates
+        function updateCoordinates(event) {
+            let x, y;
+            if (event.touches && event.touches.length > 0) {
+                x = event.touches[0].clientX;
+                y = event.touches[0].clientY;
+            } else {
+                x = event.clientX;
+                y = event.clientY;
+            }
+
+            // Relative position from the center
+            const relativeX = (x - centerX).toFixed(2);
+            const relativeY = (y - centerY).toFixed(2);
+
+            // Update the displayed coordinates
+            xCoordElement.textContent = relativeX;
+            yCoordElement.textContent = relativeY;
+
+            // Create a drop at the current position
+            createDrop(x, y);
+
+            // Store the current position for future use
+            lastX = x;
+            lastY = y;
+        }
+
+        // Attach throttled event listener
+        const throttledUpdate = throttle(updateCoordinates, 50);
+        document.addEventListener('touchmove', throttledUpdate, { passive: true });
+        document.addEventListener('mousemove', throttledUpdate);
+
+    </script>
+
+</body>
+</html>
